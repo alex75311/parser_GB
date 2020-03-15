@@ -46,7 +46,7 @@ class Parser(object):
 
 def main():
     folder = 'E:\\downloads\\test\\'
-    course_url = 'https://geekbrains.ru/chapters/7831'
+    course_url = input('Введите ссылку на курс ')
     driver = webdriver.Chrome()
     parser = Parser(driver, course_url)
     parser.login(email, password)
