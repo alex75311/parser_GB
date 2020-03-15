@@ -38,14 +38,14 @@ class Parser(object):
             name = self.driver.find_element_by_tag_name('h3').text
             download_dict[name] = mp4
         for name, link in download_dict.items():
-            print(link)
             print(f'Качаю {name}')
             spam = wget.download(link)
-            os.rename(spam, folder + name + '.mp4')
+            os.rename(spam, '\\' + folder + name + '.mp4')
+        print('Завернено')
 
 
 def main():
-    folder = 'E:\\downloads\\test\\'
+    folder = input('Введите путь к папке для скачивания ')
     course_url = input('Введите ссылку на курс ')
     driver = webdriver.Chrome()
     parser = Parser(driver, course_url)
