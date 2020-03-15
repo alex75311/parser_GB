@@ -6,6 +6,7 @@ from config import email, password
 from selenium import webdriver
 import wget
 import os
+from glob import glob
 
 
 class Parser(object):
@@ -36,16 +37,29 @@ class Parser(object):
             self.driver.get(el)
             mp4 = self.driver.find_element_by_tag_name('video').get_attribute('src')
             name = self.driver.find_element_by_tag_name('h3').text
-            download_dict[name] = mp4
+            download_dict[name + '.mp4'] = mp4
+            content_list = self.driver.find_elements_by_class_name('lesson-contents__list-item')
+            for content in content_list:
+                if 'Методичка ' in content.text:
+                    download_dict[content.text + '.pdf'] = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href').split('/')[-2]
+                elif 'Презентация ' in content.text:
+                    download_dict[content.text + '.pptx'] = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href')
+        self.driver.quit()
         for name, link in download_dict.items():
-            print(f'Качаю {name}')
-            spam = wget.download(link)
-            os.rename(spam, '\\' + folder + name + '.mp4')
+            print(f'Качаю {name} {link}')
+            if 'Методичка ' in name:
+                spam = wget.download(f'https://docs.google.com/document/u/0/export?format=pdf&id={link}')
+            else:
+                spam = wget.download(link)
+            os.rename(spam, folder + '\\' + name)
         print('Завернено')
+
+# wget.download('https://docs.google.com/document/u/0/export?format=pdf&id=1Os4W1-eGgSAgF2CXzImHbTkVuaK-zxELLh7FMR83MC0')
 
 
 def main():
-    folder = input('Введите путь к папке для скачивания ')
+    folder = input('Введите путь к папке для скачивания ').split('\\')
+    folder = '\\\\'.join(folder)
     course_url = input('Введите ссылку на курс ')
     driver = webdriver.Chrome()
     parser = Parser(driver, course_url)
@@ -54,4 +68,6 @@ def main():
 
 
 if __name__ == '__main__':
+    for file in glob('*.tmp'):
+        os.remove(file)
     main()
