@@ -1,0 +1,7 @@
+config.py
+*.tmp
+Include
+Lib
+Scripts
+.idea
+__pycache__
