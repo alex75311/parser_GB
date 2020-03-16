@@ -42,7 +42,7 @@ class Parser(object):
             for content in content_list:
                 if 'Методичка ' in content.text:
                     download_dict[content.text + '.pdf'] = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href').split('/')[-2]
-                elif 'Презентация' in content.text:
+                elif 'Презентация' in content.text and '.pptx' in content.text:
                     download_dict[content.text + '.pptx'] = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href')
         self.driver.quit()
         for name, link in download_dict.items():
@@ -58,9 +58,11 @@ class Parser(object):
 
 
 def main():
-    folder = input('Введите путь к папке для скачивания ').split('\\')
-    folder = '\\\\'.join(folder)
-    course_url = input('Введите ссылку на курс ')
+    # folder = input('Введите путь к папке для скачивания ').split('\\')
+    # folder = '\\\\'.join(folder)
+    # course_url = input('Введите ссылку на курс ')
+    folder = 'E:\\temp\\'
+    course_url = 'https://geekbrains.ru/chapters/6295'
     driver = webdriver.Chrome()
     parser = Parser(driver, course_url)
     parser.login(email, password)
