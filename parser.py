@@ -58,11 +58,11 @@ class Parser(object):
 
 
 def main():
-    # folder = input('Введите путь к папке для скачивания ').split('\\')
-    # folder = '\\\\'.join(folder)
-    # course_url = input('Введите ссылку на курс ')
-    folder = 'E:\\temp\\'
-    course_url = 'https://geekbrains.ru/chapters/6295'
+    folder = input('Введите путь к папке для скачивания ').split('\\')
+    folder = '\\\\'.join(folder)
+    course_url = input('Введите ссылку на курс ')
+    # folder = 'E:\\temp\\'
+    # course_url = 'https://geekbrains.ru/chapters/6295'
     driver = webdriver.Chrome()
     parser = Parser(driver, course_url)
     parser.login(email, password)
