@@ -7,6 +7,7 @@ from selenium import webdriver
 import wget
 import os
 from glob import glob
+import requests
 
 
 def remove_chars(value):
@@ -17,10 +18,11 @@ def remove_chars(value):
 
 
 class Parser(object):
-    def __init__(self, driver, course_url):
+    def __init__(self, course_url):
         self.login_url = 'https://geekbrains.ru/login'
         self.course_url = course_url
-        self.driver = driver
+        self.driver = webdriver.Chrome()
+        self.folder = ''
 
     def login(self, email, password):   # авторизация
         self.email = email
@@ -66,7 +68,15 @@ class Parser(object):
             return None
         return name, link
 
+    def download_files(self, name, link):       # скачивание и сохранение файла
+        print(f'Качаю {name} {link}')
+        spam = wget.download(link)
+        if os.path.exists(self.folder + '\\' + name):
+            os.remove(self.folder + '\\' + name)
+        os.rename(spam, self.folder + '\\' + name)
+
     def download_cource(self, folder):          # качаем контент в нужную папку
+        self.folder = folder
         download_dict = {}
         lessons_link = self.get_lessons_link()
         for el in lessons_link:
@@ -83,11 +93,7 @@ class Parser(object):
         self.driver.quit()
         print(download_dict)
         for name, link in download_dict.items():
-            print(f'Качаю {name} {link}')
-            spam = wget.download(link)
-            if os.path.exists(folder + '\\' + name):
-                os.remove(folder + '\\' + name)
-            os.rename(spam, folder + '\\' + name)
+            self.download_files(name, link)
         print('Завернено')
 
 
@@ -96,9 +102,8 @@ def main():
     # folder = '\\\\'.join(folder)
     # course_url = input('Введите ссылку на курс ')
     folder = 'E:\\temp\\'
-    course_url = 'https://geekbrains.ru/lessons/52188'
-    driver = webdriver.Chrome()
-    parser = Parser(driver, course_url)
+    course_url = 'https://geekbrains.ru/chapters/991'
+    parser = Parser(course_url)
     parser.login(email, password)
     parser.download_cource(folder)
 
