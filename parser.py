@@ -1,16 +1,28 @@
+######################################################################################################
 # В файле config.py должны быть строки
 # email = 'your_email'
 # password = 'your_password'
+# либо удалить строку from config import email, password
+# и вставить строки с email и password в код программы
+#
+# Для скачивания всего курса, необходимо использовать parser.download_course(course_url),
+# указав ссылку на любой урок курса
+#
+# Для скачивания только одного урока, необходимо использовать parser.download_lesson(course_url)
+# указав ссылку на урок
+######################################################################################################
 
 from config import email, password
 from selenium import webdriver
 import requests
+import re
 
 
 def remove_chars(value):
-    deletechars = '\/:*?"<>|'
-    for c in deletechars:
-        value = value.replace(c, '')
+    """ Удаление недопустимых в имени файла символов """
+
+    deletechars = r'[\\/:*?"<>|]'
+    value = re.sub(deletechars, '', value)
     return value
 
 
@@ -21,9 +33,10 @@ class Parser(object):
         self.driver = webdriver.Chrome()
         self.download_dict = {}
 
-    def login(self, email, password):  # авторизация
-        self.email = email
-        self.password = password
+    def login(self, email, password):
+        """ Авторизация на сайте """
+
+        self.driver.minimize_window()
         self.driver.get(self.login_url)
         login = self.driver.find_element_by_name('user[email]')
         passwd = self.driver.find_element_by_name('user[password]')
@@ -32,7 +45,9 @@ class Parser(object):
         passwd.send_keys(password)
         btn.click()
 
-    def download_course(self, course_url):  # получаем список уроков
+    def download_course(self, course_url):
+        """ Скачивание всего курса """
+
         self.course_url = course_url
         lessons_link = []
         self.driver.get(self.course_url)
@@ -42,8 +57,11 @@ class Parser(object):
                 lessons_link.append(el.get_attribute('href'))
         for link in lessons_link:
             self.get_lesson(link)
+        self.download_files()
 
-    def get_lesson(self, link):  # с каждой страницы урока получаем название урока, ссылку на видео и список вложений
+    def get_lesson(self, link):
+        """ Получение списка ссылок для скачивания """
+
         self.driver.get(link)
         mp4 = ''
         while not mp4:
@@ -59,9 +77,16 @@ class Parser(object):
                 self.download_dict[name] = link
             except UnboundLocalError:
                 pass
+
+    def download_lesson(self, link):
+        """ Скачивание одного урока """
+
+        self.get_lesson(link)
         self.download_files()
 
     def get_correct_link(self, content):  # получаем имя и ссылку нужных вложений
+        """ Получение корректных ссылок вложений """
+
         if 'Методичка ' in content.text:
             name = content.text + '.pdf'
             link = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href').split(
@@ -73,6 +98,8 @@ class Parser(object):
         return None if not name else name, link
 
     def download_files(self):  # скачивание и сохранение файла
+        """ Скачивание файлов """
+
         for name, link in self.download_dict.items():
             print(f'Качаю {name} {link}')
             r = requests.get(link, stream=True)
@@ -80,20 +107,22 @@ class Parser(object):
                 for chunk in r.iter_content(chunk_size=512):
                     if chunk:
                         f.write(chunk)
+        self.download_dict.clear()
         print('Завершено')
 
 
 def main():
-    # folder = input('Введите путь к папке для скачивания ').split('\\')
-    # folder = '\\\\'.join(folder)
-    # course_url = input(
-    #     'Введите ссылку на курс (если при нажатии Enter открывается страница в браузере - добавьте в конце пробел ')
-    folder = 'E:\\temp\\'
-    course_url = 'https://geekbrains.ru/lessons/58831'
+    folder = input('Введите путь к папке для скачивания ').split('\\')
+    folder = '\\\\'.join(folder)
+    course_url = input(
+        'Введите ссылку на курс (если при нажатии Enter открывается страница в браузере - добавьте в конце пробел ')
+    # folder = 'E:\\temp\\'
+    # course_url = 'https://geekbrains.ru/lessons/58831'
     parser = Parser(folder)
     parser.login(email, password)
-    # parser.get_lesson(course_url)
+    # parser.download_lesson(course_url)
     parser.download_course(course_url)
+    parser.driver.quit()
 
 
 if __name__ == '__main__':
