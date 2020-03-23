@@ -4,9 +4,6 @@
 
 from config import email, password
 from selenium import webdriver
-import wget
-import os
-from glob import glob
 import requests
 
 
@@ -18,13 +15,13 @@ def remove_chars(value):
 
 
 class Parser(object):
-    def __init__(self, course_url):
+    def __init__(self, folder):
         self.login_url = 'https://geekbrains.ru/login'
-        self.course_url = course_url
+        self.folder = folder
         self.driver = webdriver.Chrome()
-        self.folder = ''
+        self.download_dict = {}
 
-    def login(self, email, password):   # авторизация
+    def login(self, email, password):  # авторизация
         self.email = email
         self.password = password
         self.driver.get(self.login_url)
@@ -35,16 +32,18 @@ class Parser(object):
         passwd.send_keys(password)
         btn.click()
 
-    def get_lessons_link(self):         # получаем список уроков
+    def download_course(self, course_url):  # получаем список уроков
+        self.course_url = course_url
         lessons_link = []
         self.driver.get(self.course_url)
         lessons_list = self.driver.find_elements_by_class_name('lesson-header_ended')
         for el in lessons_list:
             if '/tests/' not in el.get_attribute('href'):
                 lessons_link.append(el.get_attribute('href'))
-        return lessons_link
+        for link in lessons_link:
+            self.get_lesson(link)
 
-    def get_link(self, link):   # с каждой страницы урока получаем название урока, ссылку на видео и список вложений
+    def get_lesson(self, link):  # с каждой страницы урока получаем название урока, ссылку на видео и список вложений
         self.driver.get(link)
         mp4 = ''
         while not mp4:
@@ -52,10 +51,17 @@ class Parser(object):
         name = self.driver.find_element_by_tag_name('h3').text
         name = remove_chars(name)
         name += '.mp4'
+        self.download_dict[name] = mp4
         content_list = self.driver.find_elements_by_class_name('lesson-contents__list-item')
-        return name, mp4, content_list
+        for content in content_list:
+            try:
+                name, link = self.get_correct_link(content)
+                self.download_dict[name] = link
+            except UnboundLocalError:
+                pass
+        self.download_files()
 
-    def get_correct_link(self, content):        # получаем имя и ссылку нужных вложений
+    def get_correct_link(self, content):  # получаем имя и ссылку нужных вложений
         if 'Методичка ' in content.text:
             name = content.text + '.pdf'
             link = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href').split(
@@ -64,51 +70,31 @@ class Parser(object):
         elif 'Презентация' in content.text and '.pptx' in content.text:
             name = content.text + '.pptx'
             link = content.find_element_by_class_name('lesson-contents__download-row').get_attribute('href')
-        if not name:
-            return None
-        return name, link
+        return None if not name else name, link
 
-    def download_files(self, name, link):       # скачивание и сохранение файла
-        print(f'Качаю {name} {link}')
-        spam = wget.download(link)
-        if os.path.exists(self.folder + '\\' + name):
-            os.remove(self.folder + '\\' + name)
-        os.rename(spam, self.folder + '\\' + name)
-
-    def download_cource(self, folder):          # качаем контент в нужную папку
-        self.folder = folder
-        download_dict = {}
-        lessons_link = self.get_lessons_link()
-        for el in lessons_link:
-            name, mp4, content_list = self.get_link(el)
-            download_dict[name] = mp4
-
-            for content in content_list:
-                try:
-                    name, link = self.get_correct_link(content)
-                    download_dict[name] = link
-                except UnboundLocalError:
-                    pass
-
-        self.driver.quit()
-        print(download_dict)
-        for name, link in download_dict.items():
-            self.download_files(name, link)
-        print('Завернено')
+    def download_files(self):  # скачивание и сохранение файла
+        for name, link in self.download_dict.items():
+            print(f'Качаю {name} {link}')
+            r = requests.get(link, stream=True)
+            with open(self.folder + name, "wb") as f:
+                for chunk in r.iter_content(chunk_size=512):
+                    if chunk:
+                        f.write(chunk)
+        print('Завершено')
 
 
 def main():
     # folder = input('Введите путь к папке для скачивания ').split('\\')
     # folder = '\\\\'.join(folder)
-    # course_url = input('Введите ссылку на курс ')
+    # course_url = input(
+    #     'Введите ссылку на курс (если при нажатии Enter открывается страница в браузере - добавьте в конце пробел ')
     folder = 'E:\\temp\\'
-    course_url = 'https://geekbrains.ru/chapters/991'
-    parser = Parser(course_url)
+    course_url = 'https://geekbrains.ru/lessons/58831'
+    parser = Parser(folder)
     parser.login(email, password)
-    parser.download_cource(folder)
+    # parser.get_lesson(course_url)
+    parser.download_course(course_url)
 
 
 if __name__ == '__main__':
-    for file in glob('*.tmp'):
-        os.remove(file)
     main()
