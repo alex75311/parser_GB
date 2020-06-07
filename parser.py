@@ -66,7 +66,10 @@ class Parser(object):
         mp4 = ''
         while not mp4:
             mp4 = self.driver.find_element_by_tag_name('video').get_attribute('src')
-        name = self.driver.find_element_by_tag_name('h3').text
+        for el in self.driver.find_elements_by_tag_name('h3'):
+            name = el.text
+            if name:
+                break
         name = remove_chars(name)
         name += '.mp4'
         self.download_dict[name] = mp4
@@ -117,7 +120,8 @@ def main():
     course_url = input(
         'Введите ссылку на курс (если при нажатии Enter открывается страница в браузере - добавьте в конце пробел ')
     # folder = 'E:\\temp\\'
-    # course_url = 'https://geekbrains.ru/lessons/58831'
+    # course_url = 'https://geekbrains.ru/lessons/67782/'
+    # course_url = 'https://geekbrains.ru/events/1481'
     parser = Parser(folder)
     parser.login(email, password)
     # parser.download_lesson(course_url)
