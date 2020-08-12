@@ -11,6 +11,7 @@
 # Для скачивания только одного урока, необходимо использовать parser.download_lesson(course_url)
 # указав ссылку на урок
 ######################################################################################################
+import os
 
 from config import email, password
 from selenium import webdriver
@@ -103,11 +104,17 @@ class Parser(object):
     def download_files(self):  # скачивание и сохранение файла
         """ Скачивание файлов """
 
+        headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36',
+        'Connection': 'keep-alive',
+        'Referer': 'https://geekbrains.ru/education'
+        }
+
         for name, link in self.download_dict.items():
             print(f'Качаю {name} {link}')
-            r = requests.get(link, stream=True)
-            with open(self.folder + name, "wb") as f:
-                for chunk in r.iter_content(chunk_size=512):
+            r = requests.get(link, stream=True, headers=headers)
+            with open(os.path.join(self.folder, name), "wb") as f:
+                for chunk in r.iter_content(chunk_size=5120):
                     if chunk:
                         f.write(chunk)
         self.download_dict.clear()
@@ -115,11 +122,11 @@ class Parser(object):
 
 
 def main():
-    folder = input('Введите путь к папке для скачивания ').split('\\')
-    folder = '\\\\'.join(folder)
+    folder = input('Введите путь к папке для скачивания ')
+    folder = os.path.join(folder)
     course_url = input(
         'Введите ссылку на курс (если при нажатии Enter открывается страница в браузере - добавьте в конце пробел ')
-    # folder = 'E:\\temp\\'
+    # folder = 'E:\\temp'
     # course_url = 'https://geekbrains.ru/lessons/67782/'
     # course_url = 'https://geekbrains.ru/events/1481'
     parser = Parser(folder)
